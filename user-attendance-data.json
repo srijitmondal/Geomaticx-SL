@@ -1,0 +1,262 @@
+{
+    "userData": {
+      "userId": "U12345",
+      "userName": "John Doe",
+      "department": "Engineering",
+      "employeeType": "Full-time",
+      "attendanceRecords": [
+        {
+          "date": "2025-02-01",
+          "day": "Saturday",
+          "loginTime": "09:35:12",
+          "logoutTime": "18:23:45"
+        },
+        {
+          "date": "2025-02-03",
+          "day": "Monday",
+          "loginTime": "09:22:38",
+          "logoutTime": "18:42:10"
+        },
+        {
+          "date": "2025-02-04",
+          "day": "Tuesday",
+          "loginTime": "09:28:54",
+          "logoutTime": "18:37:22"
+        },
+        {
+          "date": "2025-02-05",
+          "day": "Wednesday",
+          "loginTime": "09:15:07",
+          "logoutTime": "18:29:45"
+        },
+        {
+          "date": "2025-02-06",
+          "day": "Thursday",
+          "loginTime": "09:47:33",
+          "logoutTime": "18:55:18"
+        },
+        {
+          "date": "2025-02-07",
+          "day": "Friday",
+          "loginTime": "09:31:42",
+          "logoutTime": "18:15:30"
+        },
+        {
+          "date": "2025-02-08",
+          "day": "Saturday",
+          "loginTime": "09:42:19",
+          "logoutTime": "18:05:47"
+        },
+        {
+          "date": "2025-02-10",
+          "day": "Monday",
+          "loginTime": "09:29:52",
+          "logoutTime": "18:43:21"
+        },
+        {
+          "date": "2025-02-11",
+          "day": "Tuesday",
+          "loginTime": "09:18:25",
+          "logoutTime": "18:27:38"
+        },
+        {
+          "date": "2025-02-12",
+          "day": "Wednesday",
+          "loginTime": "09:40:11",
+          "logoutTime": "18:33:20"
+        },
+        {
+          "date": "2025-02-13",
+          "day": "Thursday",
+          "loginTime": "09:25:36",
+          "logoutTime": "18:45:12"
+        },
+        {
+          "date": "2025-02-14",
+          "day": "Friday",
+          "loginTime": "09:33:58",
+          "logoutTime": "18:10:43"
+        },
+        {
+          "date": "2025-02-15",
+          "day": "Saturday",
+          "loginTime": "09:38:47",
+          "logoutTime": "18:25:09"
+        },
+        {
+          "date": "2025-02-17",
+          "day": "Monday",
+          "loginTime": "09:22:10",
+          "logoutTime": "18:38:54"
+        },
+        {
+          "date": "2025-02-18",
+          "day": "Tuesday",
+          "loginTime": "09:44:23",
+          "logoutTime": "18:50:17"
+        },
+        {
+          "date": "2025-02-19",
+          "day": "Wednesday",
+          "loginTime": "09:27:39",
+          "logoutTime": "18:35:26"
+        },
+        {
+          "date": "2025-02-20",
+          "day": "Thursday",
+          "loginTime": "09:36:44",
+          "logoutTime": "18:42:33"
+        },
+        {
+          "date": "2025-02-21",
+          "day": "Friday",
+          "loginTime": "09:21:57",
+          "logoutTime": "18:18:45"
+        },
+        {
+          "date": "2025-02-22",
+          "day": "Saturday",
+          "loginTime": "09:49:12",
+          "logoutTime": "18:07:29"
+        },
+        {
+          "date": "2025-02-24",
+          "day": "Monday",
+          "loginTime": "09:32:08",
+          "logoutTime": "18:41:36"
+        },
+        {
+          "date": "2025-02-25",
+          "day": "Tuesday",
+          "loginTime": "09:24:51",
+          "logoutTime": "18:39:28"
+        },
+        {
+          "date": "2025-02-26",
+          "day": "Wednesday",
+          "loginTime": "09:38:22",
+          "logoutTime": "18:47:19"
+        },
+        {
+          "date": "2025-02-27",
+          "day": "Thursday",
+          "loginTime": "09:19:45",
+          "logoutTime": "18:22:57"
+        },
+        {
+          "date": "2025-02-28",
+          "day": "Friday",
+          "loginTime": "09:41:37",
+          "logoutTime": "18:15:42"
+        },
+        {
+          "date": "2025-03-01",
+          "day": "Saturday",
+          "loginTime": "09:30:29",
+          "logoutTime": "18:08:38"
+        },
+        {
+          "date": "2025-03-03",
+          "day": "Monday",
+          "loginTime": "09:26:14",
+          "logoutTime": "18:35:07"
+        },
+        {
+          "date": "2025-03-04",
+          "day": "Tuesday",
+          "loginTime": "09:33:47",
+          "logoutTime": "18:41:23"
+        },
+        {
+          "date": "2025-03-05",
+          "day": "Wednesday",
+          "loginTime": "09:21:35",
+          "logoutTime": "18:29:54"
+        },
+        {
+          "date": "2025-03-06",
+          "day": "Thursday",
+          "loginTime": "09:47:06",
+          "logoutTime": "18:52:41"
+        },
+        {
+          "date": "2025-03-07",
+          "day": "Friday",
+          "loginTime": "09:34:28",
+          "logoutTime": "18:17:39"
+        },
+        {
+          "date": "2025-03-08",
+          "day": "Saturday",
+          "loginTime": "09:42:51",
+          "logoutTime": "18:04:22"
+        },
+        {
+          "date": "2025-03-10",
+          "day": "Monday",
+          "loginTime": "09:23:19",
+          "logoutTime": "18:48:35"
+        },
+        {
+          "date": "2025-03-11",
+          "day": "Tuesday",
+          "loginTime": "09:37:43",
+          "logoutTime": "18:31:48"
+        },
+        {
+          "date": "2025-03-12",
+          "day": "Wednesday",
+          "loginTime": "09:29:05",
+          "logoutTime": "18:39:27"
+        },
+        {
+          "date": "2025-03-13",
+          "day": "Thursday",
+          "loginTime": "09:18:57",
+          "logoutTime": "18:43:14"
+        },
+        {
+          "date": "2025-03-14",
+          "day": "Friday",
+          "loginTime": "09:44:32",
+          "logoutTime": "18:19:56"
+        },
+        {
+          "date": "2025-03-15",
+          "day": "Saturday",
+          "loginTime": "09:35:24",
+          "logoutTime": "18:11:33"
+        },
+        {
+          "date": "2025-03-17",
+          "day": "Monday",
+          "loginTime": "09:28:17",
+          "logoutTime": "18:36:42"
+        },
+        {
+          "date": "2025-03-18",
+          "day": "Tuesday",
+          "loginTime": "09:39:51",
+          "logoutTime": "18:44:09"
+        },
+        {
+          "date": "2025-03-19",
+          "day": "Wednesday",
+          "loginTime": "09:20:38",
+          "logoutTime": "18:28:53"
+        },
+        {
+          "date": "2025-03-20",
+          "day": "Thursday",
+          "loginTime": "09:31:27",
+          "logoutTime": "18:40:16"
+        },
+        {
+          "date": "2025-03-21",
+          "day": "Friday",
+          "loginTime": "09:25:59",
+          "logoutTime": "18:22:31"
+        }
+      ]
+    }
+  }
