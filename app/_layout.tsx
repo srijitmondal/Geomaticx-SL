@@ -16,7 +16,7 @@ type RootStackParamList = {
   'my-leaves': undefined;
   'all-leaves': undefined;
   expenseform: undefined;
-  usertracker: undefined;
+  userattendance: undefined;
   expensedetails: undefined;
   addrequisition: undefined;
   requisitions: undefined;
@@ -129,9 +129,9 @@ const CustomDrawerContent = () => {
         <Animated.View style={{ height: attendanceHeight, overflow: 'hidden' }}>
           <TouchableOpacity
             style={styles.drawerItem}
-            onPress={() => navigation.navigate('usertracker')}
+            onPress={() => navigation.navigate('userattendance')}
           >
-            <Text style={styles.sub}>User Tracker</Text>
+            <Text style={styles.sub}>User Attendance</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
