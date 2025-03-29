@@ -137,7 +137,7 @@ export default function UserAttendanceScreen() {
   }, []);
 
   useEffect(() => {
-    const marked = {};
+    const marked:any = {};
     const startStr = moment(startDate).format('YYYY-MM-DD');
     const endStr = moment(endDate).format('YYYY-MM-DD');
     
@@ -168,7 +168,7 @@ export default function UserAttendanceScreen() {
     setShowDatePicker(true);
   };
 
-  const handleDayPress = (day) => {
+  const handleDayPress = (day:any) => {
     const selectedDate = new Date(day.dateString);
     
     if (showCalendar === 'start') {
