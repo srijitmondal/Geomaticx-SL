@@ -7,16 +7,39 @@ import {
   TextInput,
   TouchableOpacity,
   Platform,
-  Image,
   Modal,
-  ScrollView,
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, ChevronLeft, ChevronRight, Clock, Calendar, User, CheckCircle, XCircle } from 'lucide-react-native';
+import { 
+  Search, 
+  ChevronLeft, 
+  ChevronRight, 
+  Calendar as CalendarIcon, 
+  User, 
+  CheckCircle, 
+  XCircle,
+  X
+} from 'lucide-react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import moment from "moment";
-import DropDownPicker from "react-native-dropdown-picker";
+import { Calendar, LocaleConfig } from 'react-native-calendars';
+
+// Configure calendar locale
+LocaleConfig.locales['en'] = {
+  monthNames: [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ],
+  monthNamesShort: [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ],
+  dayNames: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+  dayNamesShort: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+  today: 'Today'
+};
+LocaleConfig.defaultLocale = 'en';
 
 interface AttendanceRecord {
   attn_id: string;
@@ -49,28 +72,35 @@ export default function UserAttendanceScreen() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
-  const [showDetails, setShowDetails] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState(moment().format('YYYY-MM'));
-  const [open, setOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<AttendanceSummary | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [startDate, setStartDate] = useState<Date>(moment().subtract(7, 'days').toDate());
+  const [endDate, setEndDate] = useState<Date>(new Date());
+  const [showCalendar, setShowCalendar] = useState<'start' | 'end' | null>(null);
+  const [markedDates, setMarkedDates] = useState({});
+  const [userAttendance, setUserAttendance] = useState<AttendanceRecord[]>([]);
 
   const ITEMS_PER_PAGE = 10;
 
-  const fetchAttendanceData = async () => {
+  const fetchAttendanceData = async (userId?: string, start?: string, end?: string) => {
     try {
       const baseUrl = Platform.select({
         web: 'http://localhost:80',
         default: 'http://192.168.1.148:80',
       });
 
+      const requestBody = userId ? { 
+        user_id: userId,
+        start_date: start,
+        end_date: end 
+      } : {};
+
       const response = await fetch(`${baseUrl}/user_attendance.php`, {
-        method: 'GET',
+        method: 'POST',
         headers: {
-          Accept: 'application/json',
           'Content-Type': 'application/json',
-          Origin: Platform.OS === 'web' ? window.location.origin : 'http://localhost',
         },
-        credentials: 'same-origin',
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
@@ -83,8 +113,12 @@ export default function UserAttendanceScreen() {
         throw new Error('Data is not in the expected format');
       }
 
-      setAttendanceData(data.attendance);
-      setSummaryData(data.summary);
+      if (userId) {
+        setUserAttendance(data.attendance);
+      } else {
+        setAttendanceData(data.attendance);
+        setSummaryData(data.summary);
+      }
       setError(null);
     } catch (err) {
       console.error('Fetch error:', err);
@@ -102,26 +136,67 @@ export default function UserAttendanceScreen() {
     fetchAttendanceData();
   }, []);
 
+  useEffect(() => {
+    const marked = {};
+    const startStr = moment(startDate).format('YYYY-MM-DD');
+    const endStr = moment(endDate).format('YYYY-MM-DD');
+    
+    marked[startStr] = { startingDay: true, color: '#6366f1', textColor: 'white' };
+    marked[endStr] = { endingDay: true, color: '#6366f1', textColor: 'white' };
+
+    let currentDate = moment(startDate).add(1, 'days');
+    while (currentDate.isBefore(endDate)) {
+      const dateStr = currentDate.format('YYYY-MM-DD');
+      marked[dateStr] = { color: '#a5b4fc', textColor: 'white' };
+      currentDate = currentDate.add(1, 'days');
+    }
+
+    setMarkedDates(marked);
+  }, [startDate, endDate]);
+
   const filteredUsers = summaryData.filter(user =>
     user.user_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.role_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const userAttendance = selectedUser
-    ? attendanceData
-        .filter(record => record.user_id === selectedUser)
-        .filter(record => moment(record.attendance_date).format('YYYY-MM') === selectedMonth)
-    : [];
-
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ITEMS_PER_PAGE));
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedUsers = filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
+  const handleUserSelect = (user: AttendanceSummary) => {
+    setSelectedUser(user);
+    setShowDatePicker(true);
+  };
+
+  const handleDayPress = (day) => {
+    const selectedDate = new Date(day.dateString);
+    
+    if (showCalendar === 'start') {
+      setStartDate(selectedDate);
+      if (selectedDate > endDate) {
+        setEndDate(selectedDate);
+      }
+    } else if (showCalendar === 'end') {
+      if (selectedDate >= startDate) {
+        setEndDate(selectedDate);
+      }
+    }
+    setShowCalendar(null);
+  };
+
+  const handleDateRangeSubmit = () => {
+    if (selectedUser) {
+      fetchAttendanceData(
+        selectedUser.user_id,
+        moment(startDate).format('YYYY-MM-DD'),
+        moment(endDate).format('YYYY-MM-DD')
+      );
+      setShowDatePicker(false);
+    }
+  };
+
   const renderUserItem = ({ item }: { item: AttendanceSummary }) => (
-    <TouchableOpacity onPress={() => {
-      setSelectedUser(item.user_id);
-      setShowDetails(true);
-    }}>
+    <TouchableOpacity onPress={() => handleUserSelect(item)}>
       <Animated.View
         entering={FadeIn}
         style={[
@@ -174,58 +249,184 @@ export default function UserAttendanceScreen() {
     </Animated.View>
   );
 
-  const monthOptions = Array.from({ length: 12 }, (_, i) => {
-    const date = moment().subtract(i, 'months');
-    return {
-      label: date.format('MMMM YYYY'),
-      value: date.format('YYYY-MM')
-    };
-  });
-
   return (
     <SafeAreaView style={styles.container}>
-      {showDetails && selectedUser ? (
-        <>
+      <View style={styles.header}>
+        <Text style={[styles.title, { fontSize: isDesktop ? 28 : 20 }]}>User Attendance</Text>
+      </View>
+
+      <View style={styles.searchContainer}>
+        <Search size={20} color="#6b7280" style={styles.searchIcon} />
+        <TextInput
+          style={[styles.searchInput, { fontSize: isDesktop ? 16 : 14 }]}
+          placeholder="Search users..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
+
+      <View style={styles.tableHeader}>
+        <Text style={[styles.headerCell, { flex: isDesktop ? 2 : 1.5 }]}>USER</Text>
+        <Text style={[styles.headerCell, { flex: 1 }]}>PRESENT</Text>
+        <Text style={[styles.headerCell, { flex: 1 }]}>ABSENT</Text>
+        <Text style={[styles.headerCell, { flex: 1 }]}>LAST ACTIVE</Text>
+      </View>
+
+      <FlatList
+        data={paginatedUsers}
+        keyExtractor={(item) => item.user_id}
+        renderItem={renderUserItem}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <User size={48} color="#9ca3af" />
+            <Text style={styles.emptyText}>No users found</Text>
+          </View>
+        }
+      />
+
+      <View style={styles.pagination}>
+        <Text style={styles.paginationText}>
+          Showing {startIndex + 1} to {Math.min(startIndex + ITEMS_PER_PAGE, filteredUsers.length)} of{' '}
+          {filteredUsers.length} entries
+        </Text>
+        <View style={styles.paginationControls}>
+          <TouchableOpacity
+            style={[styles.pageButton, currentPage === 1 && styles.pageButtonDisabled]}
+            onPress={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft size={20} color={currentPage === 1 ? '#9ca3af' : '#6366f1'} />
+          </TouchableOpacity>
+          <View style={styles.pageNumbers}>
+            <Text style={[styles.pageNumber, styles.currentPage]}>{currentPage}</Text>
+            <Text style={styles.pageNumber}>of {totalPages}</Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.pageButton, currentPage === totalPages && styles.pageButtonDisabled]}
+            onPress={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+          >
+            <ChevronRight size={20} color={currentPage === totalPages ? '#9ca3af' : '#6366f1'} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Date Range Picker Modal */}
+      <Modal visible={showDatePicker} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.datePickerModal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {selectedUser?.user_name}'s Attendance Records
+              </Text>
+              <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                <X size={24} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.dateRangeContainer}>
+              <View style={styles.dateInputContainer}>
+                <Text style={styles.dateLabel}>From:</Text>
+                <TouchableOpacity 
+                  style={styles.dateInput}
+                  onPress={() => setShowCalendar('start')}
+                >
+                  <Text>{moment(startDate).format('MMM D, YYYY')}</Text>
+                  <CalendarIcon size={20} color="#6366f1" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.dateInputContainer}>
+                <Text style={styles.dateLabel}>To:</Text>
+                <TouchableOpacity 
+                  style={styles.dateInput}
+                  onPress={() => setShowCalendar('end')}
+                >
+                  <Text>{moment(endDate).format('MMM D, YYYY')}</Text>
+                  <CalendarIcon size={20} color="#6366f1" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {showCalendar && (
+              <View style={styles.calendarContainer}>
+                <Calendar
+                  current={showCalendar === 'start' ? startDate.toISOString() : endDate.toISOString()}
+                  minDate={showCalendar === 'end' ? startDate.toISOString() : undefined}
+                  onDayPress={handleDayPress}
+                  markedDates={markedDates}
+                  theme={{
+                    backgroundColor: '#ffffff',
+                    calendarBackground: '#ffffff',
+                    selectedDayBackgroundColor: '#6366f1',
+                    selectedDayTextColor: '#ffffff',
+                    todayTextColor: '#6366f1',
+                    dayTextColor: '#374151',
+                    textDisabledColor: '#d1d5db',
+                    arrowColor: '#6366f1',
+                    monthTextColor: '#111827',
+                    textDayFontWeight: '400',
+                    textMonthFontWeight: '600',
+                    textDayHeaderFontWeight: '600',
+                    textDayFontSize: 14,
+                    textMonthFontSize: 16,
+                    textDayHeaderFontSize: 14
+                  }}
+                />
+              </View>
+            )}
+
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setShowDatePicker(false)}
+              >
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.submitButton]}
+                onPress={handleDateRangeSubmit}
+              >
+                <Text style={[styles.buttonText, { color: '#fff' }]}>Show Records</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Attendance Details Modal */}
+      <Modal visible={userAttendance.length > 0} animationType="slide">
+        <SafeAreaView style={styles.container}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => setShowDetails(false)} style={styles.backButton}>
-              <ArrowLeft size={24} color="#374151" />
+            <TouchableOpacity 
+              onPress={() => {
+                setUserAttendance([]);
+                setSelectedUser(null);
+              }} 
+              style={styles.backButton}
+            >
+              <ChevronLeft size={24} color="#374151" />
             </TouchableOpacity>
             <Text style={[styles.title, { fontSize: isDesktop ? 28 : 20 }]}>
-              {summaryData.find(u => u.user_id === selectedUser)?.user_name}'s Attendance
+              {selectedUser?.user_name}'s Attendance ({moment(startDate).format('MMM D')} - {moment(endDate).format('MMM D, YYYY')})
             </Text>
-          </View>
-
-          <View style={styles.monthSelector}>
-            <Text style={styles.label}>Select Month:</Text>
-            <DropDownPicker
-              open={open}
-              value={selectedMonth}
-              items={monthOptions}
-              setOpen={setOpen}
-              setValue={setSelectedMonth}
-              style={styles.dropdown}
-              dropDownContainerStyle={styles.dropdownContainer}
-              zIndex={3000}
-            />
           </View>
 
           <View style={styles.summaryContainer}>
             <View style={styles.summaryCard}>
               <Text style={styles.summaryLabel}>Total Days</Text>
-              <Text style={styles.summaryValue}>
-                {summaryData.find(u => u.user_id === selectedUser)?.total_days || 0}
-              </Text>
+              <Text style={styles.summaryValue}>{userAttendance.length}</Text>
             </View>
             <View style={[styles.summaryCard, styles.presentCard]}>
               <Text style={styles.summaryLabel}>Present</Text>
               <Text style={styles.summaryValue}>
-                {summaryData.find(u => u.user_id === selectedUser)?.present_days || 0}
+                {userAttendance.filter(a => a.attn_status === 'present').length}
               </Text>
             </View>
             <View style={[styles.summaryCard, styles.absentCard]}>
               <Text style={styles.summaryLabel}>Absent</Text>
               <Text style={styles.summaryValue}>
-                {summaryData.find(u => u.user_id === selectedUser)?.absent_days || 0}
+                {userAttendance.filter(a => a.attn_status === 'absent').length}
               </Text>
             </View>
           </View>
@@ -244,75 +445,13 @@ export default function UserAttendanceScreen() {
             renderItem={renderAttendanceItem}
             ListEmptyComponent={
               <View style={styles.emptyState}>
-                <Calendar size={48} color="#9ca3af" />
+                <CalendarIcon size={48} color="#9ca3af" />
                 <Text style={styles.emptyText}>No attendance records found</Text>
               </View>
             }
           />
-        </>
-      ) : (
-        <>
-          <View style={styles.header}>
-            <Text style={[styles.title, { fontSize: isDesktop ? 28 : 20 }]}>User Attendance</Text>
-          </View>
-
-          <View style={styles.searchContainer}>
-            <Search size={20} color="#6b7280" style={styles.searchIcon} />
-            <TextInput
-              style={[styles.searchInput, { fontSize: isDesktop ? 16 : 14 }]}
-              placeholder="Search users..."
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-          </View>
-
-          <View style={styles.tableHeader}>
-            <Text style={[styles.headerCell, { flex: isDesktop ? 2 : 1.5 }]}>USER</Text>
-            <Text style={[styles.headerCell, { flex: 1 }]}>PRESENT</Text>
-            <Text style={[styles.headerCell, { flex: 1 }]}>ABSENT</Text>
-            <Text style={[styles.headerCell, { flex: 1 }]}>LAST ACTIVE</Text>
-          </View>
-
-          <FlatList
-            data={paginatedUsers}
-            keyExtractor={(item) => item.user_id}
-            renderItem={renderUserItem}
-            ListEmptyComponent={
-              <View style={styles.emptyState}>
-                <User size={48} color="#9ca3af" />
-                <Text style={styles.emptyText}>No users found</Text>
-              </View>
-            }
-          />
-
-          <View style={styles.pagination}>
-            <Text style={styles.paginationText}>
-              Showing {startIndex + 1} to {Math.min(startIndex + ITEMS_PER_PAGE, filteredUsers.length)} of{' '}
-              {filteredUsers.length} entries
-            </Text>
-            <View style={styles.paginationControls}>
-              <TouchableOpacity
-                style={[styles.pageButton, currentPage === 1 && styles.pageButtonDisabled]}
-                onPress={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft size={20} color={currentPage === 1 ? '#9ca3af' : '#6366f1'} />
-              </TouchableOpacity>
-              <View style={styles.pageNumbers}>
-                <Text style={[styles.pageNumber, styles.currentPage]}>{currentPage}</Text>
-                <Text style={styles.pageNumber}>of {totalPages}</Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.pageButton, currentPage === totalPages && styles.pageButtonDisabled]}
-                onPress={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-              >
-                <ChevronRight size={20} color={currentPage === totalPages ? '#9ca3af' : '#6366f1'} />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </>
-      )}
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -470,31 +609,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 16,
   },
-  monthSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#f9fafb',
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#374151',
-    marginRight: 16,
-  },
-  dropdown: {
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff',
-    minHeight: 40,
-    width: 200,
-  },
-  dropdownContainer: {
-    borderColor: '#ccc',
-    backgroundColor: '#fff',
-  },
   summaryContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -528,5 +642,84 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '600',
     color: '#111827',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  datePickerModal: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 24,
+    width: '90%',
+    maxWidth: 400,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  dateRangeContainer: {
+    marginBottom: 20,
+  },
+  dateInputContainer: {
+    marginBottom: 16,
+  },
+  dateLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  dateInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    backgroundColor: '#f9fafb',
+  },
+  calendarContainer: {
+    marginBottom: 20,
+    borderRadius: 10,
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+  },
+  modalButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 8,
+  },
+  cancelButton: {
+    backgroundColor: '#f3f4f6',
+  },
+  submitButton: {
+    backgroundColor: '#6366f1',
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
